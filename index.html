@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工时工资计算器</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Lucide图标库 -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* 自定义字体和基础样式 */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        }
+        /* 自定义按钮聚焦时的轮廓样式 */
+        .btn-focus-ring {
+            transition: box-shadow 0.2s ease-in-out;
+        }
+        .btn-focus-ring:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.4);
+        }
+        /* 移除number input的箭头 */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+          -webkit-appearance: none; 
+          margin: 0; 
+        }
+        input[type=number] {
+          -moz-appearance: textfield;
+        }
+        /* 滚动条美化 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-200 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-6 md:p-8 transform transition-all duration-500">
+        
+        <!-- 标题区域 -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-slate-800">工时工资计算器</h1>
+            <p class="text-slate-500 mt-2">输入 `小时.分钟` 格式 (例如 `20.40`), 数据会自动保存</p>
+        </div>
+
+        <!-- 输入区域 -->
+        <div class="flex flex-col sm:flex-row gap-3 mb-6">
+            <input type="text" id="timeInput" placeholder="例如: 20.40 代表20小时40分钟" class="flex-grow w-full px-4 py-3 text-lg bg-slate-100 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition duration-200" onkeyup="handleKeyPress(event)">
+            <button onclick="addOrder()" class="w-full sm:w-auto bg-teal-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-teal-700 active:bg-teal-800 transition-transform transform active:scale-95 btn-focus-ring flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
+                <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                <span>添加工单</span>
+            </button>
+        </div>
+
+        <!-- 主内容区域 -->
+        <div class="bg-slate-50 rounded-xl p-4 md:p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-slate-700">当前工单明细</h2>
+                <div class="flex items-center gap-2">
+                    <button onclick="openHistoryModal()" class="text-sm text-slate-500 hover:text-teal-600 font-medium flex items-center gap-1 transition-colors btn-focus-ring rounded-md p-1">
+                        <i data-lucide="history" class="w-4 h-4"></i>
+                        <span>查看复盘</span>
+                    </button>
+                    <button onclick="resetCalculator()" class="text-sm text-slate-500 hover:text-red-600 font-medium flex items-center gap-1 transition-colors btn-focus-ring rounded-md p-1">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        <span>全部清空</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="ordersListContainer" class="max-h-64 overflow-y-auto pr-2 space-y-2 mb-4 custom-scrollbar">
+                <p id="emptyState" class="text-center text-slate-400 py-8">暂无工单记录</p>
+            </div>
+
+            <hr class="border-t border-slate-200 my-4">
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center md:text-left">
+                <div class="p-2">
+                    <p class="text-sm text-slate-500">总单数</p>
+                    <p id="totalOrders" class="text-2xl font-bold text-slate-800">0</p>
+                </div>
+                <div class="p-2">
+                    <p class="text-sm text-slate-500">总工资</p>
+                    <p id="totalWage" class="text-2xl font-bold text-green-600">¥ 0.00</p>
+                </div>
+                <div class="p-2">
+                    <p class="text-sm text-slate-500">总工时</p>
+                    <p id="totalHours" class="text-2xl font-bold text-teal-600">0.00</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="messageBox" class="fixed top-5 right-5 bg-red-500 text-white px-6 py-3 rounded-lg shadow-xl opacity-0 translate-y-[-20px] transition-all duration-300"></div>
+    </div>
+
+    <!-- 历史复盘 Modal -->
+    <div id="historyModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden transition-opacity duration-300">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-xl max-h-[80vh] flex flex-col">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 class="text-lg font-semibold text-slate-800">历史工单复盘</h3>
+                <button onclick="closeHistoryModal()" class="text-slate-400 hover:text-slate-800 p-1 rounded-full transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div class="p-4">
+                <label for="monthSelector" class="text-sm font-medium text-slate-600">选择月份:</label>
+                <select id="monthSelector" class="mt-1 block w-full p-2 border border-slate-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"></select>
+            </div>
+            <div id="historyContent" class="p-4 overflow-y-auto custom-scrollbar flex-grow">
+                <!-- 历史数据将在这里显示 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const WAGE_PER_HOUR = 6;
+        const STORAGE_KEY = 'workHoursApp_orders';
+
+        // --- STATE ---
+        let orders = [];
+
+        // --- DOM ELEMENTS ---
+        const timeInput = document.getElementById('timeInput');
+        const ordersListContainer = document.getElementById('ordersListContainer');
+        const totalHoursSpan = document.getElementById('totalHours');
+        const emptyState = document.getElementById('emptyState');
+        const messageBox = document.getElementById('messageBox');
+        const totalOrdersSpan = document.getElementById('totalOrders');
+        const totalWageSpan = document.getElementById('totalWage');
+        const historyModal = document.getElementById('historyModal');
+        const monthSelector = document.getElementById('monthSelector');
+        const historyContent = document.getElementById('historyContent');
+
+        // --- FUNCTIONS ---
+
+        /**
+         * 显示提示消息
+         * @param {string} message - 要显示的消息
+         * @param {boolean} isError - 是否为错误消息
+         */
+        function showMessage(message, isError = true) {
+            messageBox.textContent = message;
+            messageBox.className = `fixed top-5 right-5 text-white px-6 py-3 rounded-lg shadow-xl transition-all duration-300 ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+            messageBox.classList.remove('opacity-0', 'translate-y-[-20px]');
+            setTimeout(() => {
+                messageBox.classList.add('opacity-0', 'translate-y-[-20px]');
+            }, 2500);
+        }
+
+        /**
+         * 解析输入并添加工单
+         */
+        function addOrder() {
+            const inputValue = timeInput.value.trim();
+            if (!inputValue) {
+                showMessage('请输入工时！');
+                return;
+            }
+
+            const parts = inputValue.split('.');
+            const hoursValue = parseInt(parts[0] || '0', 10);
+            const minutesValue = parseInt(parts[1] || '0', 10);
+
+            if (isNaN(hoursValue) || isNaN(minutesValue) || minutesValue >= 60 || hoursValue < 0 || minutesValue < 0) {
+                showMessage('格式错误, 分钟数不能超过59');
+                return;
+            }
+            
+            const totalDecimalHours = hoursValue + (minutesValue / 60);
+
+            if (totalDecimalHours > 0) {
+                orders.push({ 
+                    decimalHours: totalDecimalHours, 
+                    originalInput: `${hoursValue}小时 ${minutesValue}分钟`,
+                    date: new Date().toISOString() // 添加时间戳
+                });
+                saveOrders();
+                render();
+                timeInput.value = '';
+            } else {
+                showMessage('请输入有效的正数工时！');
+            }
+            timeInput.focus();
+        }
+
+        /**
+         * 删除指定索引的工单
+         * @param {number} index - 要删除的工单在数组中的索引
+         */
+        function deleteOrder(index) {
+            orders.splice(index, 1);
+            saveOrders();
+            render();
+        }
+
+        /**
+         * 重置计算器 (清空所有数据)
+         */
+        function resetCalculator() {
+            if (confirm('确定要清空所有工单记录吗？此操作不可撤销。')) {
+                orders = [];
+                saveOrders();
+                render();
+                showMessage('所有数据已清空', false);
+            }
+        }
+        
+        /**
+         * 监听回车键
+         * @param {KeyboardEvent} event - 键盘事件对象
+         */
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                addOrder();
+            }
+        }
+
+        /**
+         * 核心渲染函数：更新主界面UI
+         */
+        function render() {
+            // 1. 更新工单列表
+            ordersListContainer.innerHTML = '';
+            if (orders.length === 0) {
+                ordersListContainer.appendChild(emptyState);
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+                orders.forEach((order, index) => {
+                    const singleWage = order.decimalHours * WAGE_PER_HOUR;
+                    const item = document.createElement('div');
+                    item.className = 'flex items-center justify-between bg-white p-3 rounded-lg shadow-sm animate-fade-in';
+                    item.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-bold text-teal-700 bg-teal-100 rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0">${index + 1}</span>
+                            <div>
+                                <p class="font-semibold text-slate-800">${order.originalInput}</p>
+                                <p class="text-xs text-green-600">工资: ¥ ${singleWage.toFixed(2)}</p>
+                            </div>
+                        </div>
+                        <button onclick="deleteOrder(${index})" class="text-slate-400 hover:text-red-500 transition-colors p-1 rounded-full btn-focus-ring">
+                            <i data-lucide="x-circle" class="w-5 h-5"></i>
+                        </button>
+                    `;
+                    ordersListContainer.appendChild(item);
+                });
+            }
+
+            // 2. 计算并更新总计信息
+            const totalHours = orders.reduce((sum, current) => sum + current.decimalHours, 0);
+            const totalWage = totalHours * WAGE_PER_HOUR;
+            
+            totalHoursSpan.textContent = totalHours.toFixed(2);
+            totalOrdersSpan.textContent = orders.length;
+            totalWageSpan.textContent = `¥ ${totalWage.toFixed(2)}`;
+            
+            lucide.createIcons();
+        }
+
+        // --- LOCAL STORAGE ---
+        function saveOrders() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+        }
+
+        function loadOrders() {
+            const savedOrders = localStorage.getItem(STORAGE_KEY);
+            if (savedOrders) {
+                orders = JSON.parse(savedOrders);
+            }
+            render();
+        }
+
+        // --- HISTORY MODAL ---
+        function openHistoryModal() {
+            populateMonthSelector();
+            displayMonthlyReview();
+            historyModal.classList.remove('hidden');
+        }
+
+        function closeHistoryModal() {
+            historyModal.classList.add('hidden');
+        }
+
+        function populateMonthSelector() {
+            const months = new Set(orders.map(order => order.date.substring(0, 7))); // YYYY-MM
+            monthSelector.innerHTML = '<option value="all">所有月份</option>';
+            Array.from(months).sort().reverse().forEach(month => {
+                const option = document.createElement('option');
+                option.value = month;
+                option.textContent = month;
+                monthSelector.appendChild(option);
+            });
+            monthSelector.onchange = displayMonthlyReview;
+        }
+
+        function displayMonthlyReview() {
+            const selectedMonth = monthSelector.value;
+            const filteredOrders = selectedMonth === 'all' 
+                ? orders 
+                : orders.filter(order => order.date.startsWith(selectedMonth));
+
+            if (filteredOrders.length === 0) {
+                historyContent.innerHTML = '<p class="text-center text-slate-500">该月份没有记录。</p>';
+                return;
+            }
+
+            const totalHours = filteredOrders.reduce((sum, o) => sum + o.decimalHours, 0);
+            const totalWage = totalHours * WAGE_PER_HOUR;
+
+            let contentHTML = `
+                <div class="bg-slate-100 rounded-lg p-4 mb-4 grid grid-cols-3 gap-2 text-center">
+                    <div><p class="text-xs text-slate-500">单数</p><p class="font-bold text-slate-800">${filteredOrders.length}</p></div>
+                    <div><p class="text-xs text-slate-500">总工时</p><p class="font-bold text-teal-600">${totalHours.toFixed(2)}</p></div>
+                    <div><p class="text-xs text-slate-500">总工资</p><p class="font-bold text-green-600">¥ ${totalWage.toFixed(2)}</p></div>
+                </div>
+                <div class="space-y-2">
+            `;
+
+            filteredOrders.forEach(order => {
+                const orderDate = new Date(order.date);
+                const formattedDate = `${orderDate.getMonth() + 1}月${orderDate.getDate()}日`;
+                contentHTML += `
+                    <div class="flex justify-between items-center bg-white p-2 rounded-md border">
+                        <div>
+                            <p class="font-medium text-slate-700">${order.originalInput}</p>
+                            <p class="text-xs text-slate-400">${formattedDate}</p>
+                        </div>
+                        <p class="text-sm text-green-600">¥ ${(order.decimalHours * WAGE_PER_HOUR).toFixed(2)}</p>
+                    </div>
+                `;
+            });
+
+            contentHTML += '</div>';
+            historyContent.innerHTML = contentHTML;
+        }
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadOrders();
+            lucide.createIcons();
+        });
+    </script>
+    
+    <style>
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.3s ease-out forwards;
+        }
+        #historyModal {
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        #historyModal:not(.hidden) {
+            opacity: 1;
+        }
+        #historyModal > div {
+            transform: scale(0.95);
+            transition: transform 0.3s ease-in-out;
+        }
+        #historyModal:not(.hidden) > div {
+            transform: scale(1);
+        }
+    </style>
+</body>
+</html>
