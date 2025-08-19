@@ -66,7 +66,7 @@
 </head>
 <body class="bg-slate-100">
     <div class="container mx-auto p-4 min-h-screen flex flex-col">
-        <div class="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-5 sm:p-6 md:p-8 flex-grow flex flex-col">
+        <div class="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-4 sm:p-6 flex-grow flex flex-col">
             
             <!-- 标题区域 -->
             <div class="text-center mb-4">
@@ -77,7 +77,7 @@
 
             <!-- 输入区域 -->
             <div class="flex flex-col sm:flex-row gap-3 mb-6">
-                <input type="text" id="timeInput" placeholder="例如: 20.40" class="flex-grow w-full px-4 py-3 text-base sm:text-lg bg-slate-100 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition duration-200" onkeyup="handleKeyPress(event)">
+                <input type="text" id="timeInput" placeholder="例如: 20.40" class="flex-grow w-full px-4 py-3 text-base bg-slate-100 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition duration-200" onkeyup="handleKeyPress(event)">
                 <button onclick="addOrder()" class="w-full sm:w-auto bg-teal-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-teal-700 active:bg-teal-800 transition-transform transform active:scale-95 btn-focus-ring flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
                     <i data-lucide="plus-circle" class="w-5 h-5"></i>
                     <span>添加</span>
@@ -85,13 +85,13 @@
             </div>
 
             <!-- 主内容区域 -->
-            <div class="bg-slate-50 rounded-xl p-4 sm:p-6 flex flex-col flex-grow">
-                <div class="flex justify-between items-center mb-4">
-                    <div class="flex items-center gap-3">
-                        <h2 class="text-lg sm:text-xl font-semibold text-slate-700">当前工单明细</h2>
-                        <span id="listTotalOrders" class="text-sm font-medium bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">0 单</span>
-                    </div>
+            <div class="bg-slate-50 rounded-xl p-4 flex flex-col flex-grow">
+                <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
                     <div class="flex items-center gap-2">
+                        <h2 class="text-base sm:text-lg font-semibold text-slate-700 whitespace-nowrap">当前工单明细</h2>
+                        <span id="listTotalOrders" class="text-xs sm:text-sm font-medium bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">0 单</span>
+                    </div>
+                    <div class="flex items-center gap-1">
                         <button onclick="openHistoryModal()" class="text-slate-500 hover:text-teal-600 font-medium flex items-center gap-1 transition-colors btn-focus-ring rounded-md p-2">
                             <i data-lucide="history" class="w-5 h-5"></i>
                             <span class="hidden sm:inline text-sm">复盘</span>
@@ -113,11 +113,11 @@
                 <div class="grid grid-cols-2 gap-4 text-center">
                     <div class="p-1">
                         <p class="text-xs sm:text-sm text-slate-500">总工资</p>
-                        <p id="totalWage" class="text-xl sm:text-2xl font-bold text-green-600">¥0.00</p>
+                        <p id="totalWage" class="text-lg sm:text-xl font-bold text-green-600">¥0.00</p>
                     </div>
                     <div class="p-1">
                         <p class="text-xs sm:text-sm text-slate-500">总工时</p>
-                        <p id="totalHours" class="text-xl sm:text-2xl font-bold text-teal-600">0.00</p>
+                        <p id="totalHours" class="text-lg sm:text-xl font-bold text-teal-600">0.00</p>
                     </div>
                 </div>
             </div>
